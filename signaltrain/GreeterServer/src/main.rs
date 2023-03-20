@@ -1,4 +1,4 @@
-use zbus::{SignalContext, ConnectionBuilder, dbus_interface, fdo, Result};
+use zbus::{dbus_interface, fdo, ConnectionBuilder, Result, SignalContext};
 
 use event_listener::Event;
 
@@ -9,27 +9,26 @@ struct Greeter {
 
 #[dbus_interface(name = "org.zbus.MyGreeter1")]
 impl Greeter {
-    async fn say_hello(&self, name: &str) -> String {
+    // if the func need to send signal, it should declare ctxt
+    async fn say_hello(
+        &mut self,
+        name: &str,
+        #[zbus(signal_context)] ctxt: SignalContext<'_>,
+    ) -> String {
+        self.set_greeter_name(name.to_string()).await;
+        let _ = Self::greeter_name_changed(&self, &ctxt).await;
         format!("Hello {}!", name)
     }
 
     // Rude!
-    async fn go_away(
-        &self,
-        #[zbus(signal_context)]
-        ctxt: SignalContext<'_>,
-    ) -> fdo::Result<()> {
+    async fn go_away(&self, #[zbus(signal_context)] ctxt: SignalContext<'_>) -> fdo::Result<()> {
         Self::greeted_everyone(&ctxt).await?;
         self.done.notify(1);
 
         Ok(())
     }
 
-    async fn come_on(
-        &self,
-        #[zbus(signal_context)]
-        ctxt: SignalContext<'_>,
-    ) -> fdo::Result<()> {
+    async fn come_on(&self, #[zbus(signal_context)] ctxt: SignalContext<'_>) -> fdo::Result<()> {
         Self::greeted_everyone(&ctxt).await?;
         Self::bye_everyone(&ctxt, "SSSS".to_string()).await?;
 
@@ -80,4 +79,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-

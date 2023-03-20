@@ -10,7 +10,8 @@ trait MyGreeter1 {
     fn greeted_everyone(&self) -> Result<()>;
     #[dbus_proxy(signal)]
     fn bye_everyone(&self) -> Result<String>;
-    // add code here
+    #[dbus_proxy(property)]
+    fn greeter_name(&self) -> Result<String>;
 }
 
 #[tokio::main]
@@ -20,6 +21,8 @@ async fn main() -> Result<()> {
 
     let mut greeted_happened = greeter.receive_greeted_everyone().await?;
     let mut bye_happened = greeter.receive_bye_everyone().await?;
+    let mut name_changed = greeter.receive_greeter_name_changed().await;
+
     futures_util::try_join!(
         async {
             while let Some(_signal) = greeted_happened.next().await {
@@ -33,6 +36,14 @@ async fn main() -> Result<()> {
                 let name = String::from_utf8_lossy(bytes);
                 println!("name = {name}");
             }
+            Ok::<(), zbus::Error>(())
+        },
+        async {
+            while let Some(signal) = name_changed.next().await {
+                let name = signal.get().await?;
+                println!("new name is: {name}");
+            }
+            println!("end");
             Ok::<(), zbus::Error>(())
         }
     )?;
