@@ -48,6 +48,7 @@ impl Greeter {
     /// using this setter.
     #[dbus_interface(property)]
     async fn set_greeter_name(&mut self, name: String) {
+        println!("{name}");
         self.name = name;
     }
 

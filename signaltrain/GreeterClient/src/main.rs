@@ -12,12 +12,15 @@ trait MyGreeter1 {
     fn bye_everyone(&self) -> Result<String>;
     #[dbus_proxy(property)]
     fn greeter_name(&self) -> Result<String>;
+    #[dbus_proxy(property)]
+    fn set_greeter_name(&self, name: String) -> Result<()>;
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let conn = Connection::session().await?;
     let greeter = MyGreeter1Proxy::new(&conn).await?;
+    greeter.set_greeter_name("Namesss".to_string()).await.ok();
 
     let mut greeted_happened = greeter.receive_greeted_everyone().await?;
     let mut bye_happened = greeter.receive_bye_everyone().await?;
